@@ -1,0 +1,5 @@
+# Git ignore file.
+*~
+composer.lock
+.DS_Store
+vendor
