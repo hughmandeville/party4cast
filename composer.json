@@ -1,0 +1,24 @@
+{
+    "name": "du/php",
+    "description": "Composer currently ONLY provides shared build tools. This is NOT PSR4 compatible.",
+    "keywords": ["php", "core"],
+    "authors": [
+        {
+            "name": "Hugh Mandeville",
+            "email": "hughmandeville@gmail.com",
+            "role": "contributor"
+        }
+    ],
+    "repositories": [
+    ],
+    "require": {
+        "google/apiclient": "2.0.2",
+    },
+    "require-dev": {
+        "codeception/codeception": "2.2.3",
+        "friendsofphp/php-cs-fixer" : "1.12.2",
+        "phpdocumentor/phpdocumentor": "2.9.0",
+        "phpmd/phpmd" : "@stable",
+        "squizlabs/php_codesniffer": "2.7.0"
+    }
+}
