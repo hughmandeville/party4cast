@@ -47,8 +47,8 @@ curl_setopt($ch,CURLOPT_RETURNTRANSFER,1);
 
 // Eventbrite parties around New York
 date_default_timezone_set('UTC');
-$in_two_weeks = strtotime('+10 days');
-$eventbrite_url = 'https://www.eventbriteapi.com/v3/events/search/?token=' . $eventbrite_oauth_token . '&formats=11&location.latitude=40.720363&location.longitude=-73.948252&location.within=12mi&sort_by=date&start_date.range_end=' . date('Y-m-d', $in_two_weeks) . 'T' . date('H:i:s', $in_two_weeks) . 'Z';
+$in_ten_days = strtotime('+10 days');
+$eventbrite_url = 'https://www.eventbriteapi.com/v3/events/search/?token=' . $eventbrite_oauth_token . '&formats=11&location.latitude=40.720363&location.longitude=-73.948252&location.within=12mi&sort_by=date&start_date.range_end=' . date('Y-m-d', $in_ten_days) . 'T' . date('H:i:s', $in_ten_days) . 'Z';
 date_default_timezone_set('America/New_York');
 
 $events = array();
