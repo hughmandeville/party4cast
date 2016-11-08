@@ -7,7 +7,7 @@ The **party4cast** project contains scripts for creating the party4cast Google s
 ## Files & Directories
 
     src/
-        process_party_feeds.php        - Process the party RSS feeds and add the data to the Google spreadsheet.
+        process_party_feeds.php   - Process the party site data and add the data to the Google spreadsheet.
 
 ## Links
 
