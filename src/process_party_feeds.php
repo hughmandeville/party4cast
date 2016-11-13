@@ -2,15 +2,22 @@
 /**
  * process_party_feeds.php
  *
+ * Eventbrite NYC parties - calls Eventbrite search API.
+ *   https://www.eventbriteapi.com
+ *   https://www.eventbrite.com/d/ny--new-york/parties/?crt=regular&sort=date
+ *
+ * NightOut New York - calls NighOut search API .
+ *   https://nightout.com/api/search.json?timing%5B%5D=week&city=2&page=1
+ *
  * NOTE: Make sure the client email address (fb-video-dashboard@nyt-newsroom-dashboards.iam.gserviceaccount.com)
  * has edit permission on the sheet.  Otherwise will need to update code to impersonate someone.
  *
  * ----
- * https://www.eventbrite.com/d/ny--new-york/parties/?crt=regular&sort=date
+ *
  * https://www.timeout.com/newyork/bars/bar-openings-and-events-in-nyc
  * https://www.timeout.com/newyork/nightlife/best-parties-in-nyc-this-week
  * https://nightout.com/ny/new-york
- * http://www.nycgo.com/things-to-do/events-in-nyc/nightlife-calendar?
+ * http://www.nycgo.com/things-to-do/events-in-nyc/nightlife-calendar
  * http://www.nyc.com/concert_tickets/
  * http://www.villagevoice.com/calendar
  */
@@ -45,44 +52,13 @@ curl_setopt($ch,CURLOPT_HTTPGET, TRUE);
 curl_setopt($ch,CURLOPT_CONNECTTIMEOUT,10);
 curl_setopt($ch,CURLOPT_RETURNTRANSFER,1);
 
-// Eventbrite parties around New York
-date_default_timezone_set('UTC');
-$in_ten_days = strtotime('+10 days');
-$eventbrite_url = 'https://www.eventbriteapi.com/v3/events/search/?token=' . $eventbrite_oauth_token . '&formats=11&location.latitude=40.720363&location.longitude=-73.948252&location.within=12mi&sort_by=date&start_date.range_end=' . date('Y-m-d', $in_ten_days) . 'T' . date('H:i:s', $in_ten_days) . 'Z';
-date_default_timezone_set('America/New_York');
 
-$events = array();
+$no_events = get_nightout_events($ch);
+$eb_events = get_evenbrite_events($ch, $eventbrite_oauth_token);
 
-$page_number = 1;
-$page_count = 0;
+$events = array_merge($no_events, $eb_events);
 
-do {
-    curl_setopt($ch,CURLOPT_URL, $eventbrite_url . '&page=' . $page_number);
-    $response_data = curl_exec($ch);
-
-    if ($response_data != null) {
-        $data = json_decode($response_data, true);
-        $pagination = $data['pagination'];
-        $page_number = $pagination['page_number'];
-        $page_count = $pagination['page_count'];
-        $events_data = $data['events'];
-
-        foreach($events_data as $event_data) {
-            $event = new Event();
-            $event->name = $event_data['name']['text'];
-            $event->description = $event_data['description']['text'];
-            $event->url = $event_data['url'];
-            $event->start_time = $event_data['start']['local'];
-            $event->end_time = $event_data['end']['local'];
-            $event->status = $event_data['status'];
-            $event->feed = 'Eventbrite Parties NYC';
-            $events[] = $event;
-        }
-    } else {
-        break;
-    }
-    $page_number++;
-} while ($page_number < $page_count);
+// TODO: order events by date
 
 // Get the Google Sheets Service.
 $service = get_service();
@@ -102,7 +78,7 @@ $row_num++;
 $rows = array();
 foreach($events as $event) {
     $rows[] = get_event_row($event);
-    print  $event->name . "\n";
+    print  '  ' . $event->name . "\n";
 }
 write_rows_to_sheet($service, $spreadsheet_id, $sheet_id, $rows, $row_num);
 
@@ -113,6 +89,106 @@ printf("Took %2.1fs to run and used %s of memory.\n", $diff_time, bytes_to_nice_
 
 exit(0);
 
+
+/**
+ * get_nightout_events - gets NighOut NYC events using their Search API.
+ */
+function get_nightout_events($ch)
+{
+    $events = array();
+
+    $page_number = 1;
+    $page_count = 0;
+
+    $nightout_url = "https://nightout.com/api/search.json?timing%5B%5D=week&city=2";
+
+    do {
+        usleep(400000);
+
+        curl_setopt($ch,CURLOPT_URL, $nightout_url . '&page=' . $page_number);
+        $response_data = curl_exec($ch);
+
+        if ($response_data != null) {
+            $data = json_decode($response_data, true);
+            $page_number = $data['meta']['current_page'];
+            $page_count = $data['meta']['total_pages'];
+            $events_data = $data['data'];
+            foreach($events_data as $event_data) {
+                $event = new Event();
+                $event->name = $event_data['title'];
+                $event->description = $event_data['subtitle'];
+                $event->url = "https://nightout.com" . $event_data['url'];
+                $event->start_time = date("h:i a", $event_data['start_time']);
+                $event->end_time = date("h:i a", $event_data['end_time']);
+                $event->status = '';
+                if ($event_data['cent_max_price'] > 0) {
+                    $event->price = '$' . ($event_data['cent_min_price'] / 100) . ' - $' . ($event_data['cent_max_price'] / 100);
+                } else {
+                    $event->price = '$' . ($event_data['cent_min_price'] / 100);
+                }
+                $event->type = $event_data['type_label'];
+                $event->type2 = $event_data['item_type'];
+                $event->image = $event_data['image_src'];
+                $event->feed = 'NightOut NYC';
+                $events[] = $event;
+            }
+        } else {
+            break;
+        }
+        $page_number++;
+    } while ($page_number < $page_count);
+    return ($events);
+}
+
+
+
+/**
+ * get_eventrite_events - gets NYC parties from Eventbrite API.
+ */
+function get_evenbrite_events($ch, $eventbrite_oauth_token)
+{
+    $events = array();
+
+    // Eventbrite parties around New York
+    date_default_timezone_set('UTC');
+    $in_ten_days = strtotime('+10 days');
+    $eventbrite_url = 'https://www.eventbriteapi.com/v3/events/search/?token=' . $eventbrite_oauth_token . '&formats=11&location.latitude=40.720363&location.longitude=-73.948252&location.within=12mi&sort_by=date&start_date.range_end=' . date('Y-m-d', $in_ten_days) . 'T' . date('H:i:s', $in_ten_days) . 'Z';
+    date_default_timezone_set('America/New_York');
+
+    $page_number = 1;
+    $page_count = 0;
+
+    do {
+        usleep(400000);
+
+        curl_setopt($ch,CURLOPT_URL, $eventbrite_url . '&page=' . $page_number);
+        $response_data = curl_exec($ch);
+
+        if ($response_data != null) {
+            $data = json_decode($response_data, true);
+            $pagination = $data['pagination'];
+            $page_number = $pagination['page_number'];
+            $page_count = $pagination['page_count'];
+            $events_data = $data['events'];
+
+            foreach($events_data as $event_data) {
+                $event = new Event();
+                $event->name = $event_data['name']['text'];
+                $event->description = $event_data['description']['text'];
+                $event->url = $event_data['url'];
+                $event->start_time = $event_data['start']['local'];
+                $event->end_time = $event_data['end']['local'];
+                $event->status = $event_data['status'];
+                $event->feed = 'Eventbrite Parties NYC';
+                $events[] = $event;
+            }
+        } else {
+            break;
+        }
+        $page_number++;
+    } while ($page_number < $page_count);
+    return ($events);
+}
 
 
 /**
@@ -166,7 +242,11 @@ function get_first_row()
     $cells[] = get_cell('Start Time',  $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // D - 4
     $cells[] = get_cell('End Time',    $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // E - 5
     $cells[] = get_cell('Status',      $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // F - 6
-    $cells[] = get_cell('Feed',        $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // G - 7
+    $cells[] = get_cell('Price',       $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // G - 7
+    $cells[] = get_cell('Type',        $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // H - 8
+    $cells[] = get_cell('Type2',       $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // I - 9
+    $cells[] = get_cell('Image',       $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // J - 10
+    $cells[] = get_cell('Feed',        $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // K - 11
     $row->setValues($cells);
     return ($row);
 }
@@ -179,11 +259,15 @@ function get_event_row($event)
     $cells = array();
     $cells[] = get_cell($event->name,         $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // A - 1
     $cells[] = get_cell($event->description,  $color['s2'], false,  8, 'LEFT', 'TOP', 'WRAP', 'string');  // B - 2
-    $cells[] = get_cell($event->url,          $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // C - 3
+    $cells[] = get_cell($event->url,          $color['s2'], false,  9, 'LEFT', 'TOP', 'WRAP', 'string');  // C - 3
     $cells[] = get_cell($event->start_time,   $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // D - 4
     $cells[] = get_cell($event->end_time,     $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // E - 5
     $cells[] = get_cell($event->status,       $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // F - 6
-    $cells[] = get_cell($event->feed,         $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // G - 7
+    $cells[] = get_cell($event->price,        $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // G - 7
+    $cells[] = get_cell($event->type,         $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // H - 8
+    $cells[] = get_cell($event->type2,        $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // I - 9
+    $cells[] = get_cell($event->image,        $color['s2'], false,  9, 'LEFT', 'TOP', 'WRAP', 'string');  // J - 10
+    $cells[] = get_cell($event->feed,         $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // K - 11
 
     $row->setValues($cells);
     return ($row);
@@ -222,7 +306,7 @@ function write_rows_to_sheet($service, $spreadsheet_id, $sheet_id, $rows, $start
             break;
         } catch (Google_Service_Exception $gse) {
             usleep(1000000 * $i);
-            print "  Got exception updating spreadsheet (try $i).\n";
+            print "  Got exception updating spreadsheet (try $i). " . $gse->getMessage() . "\n";
         }
     }
 }
@@ -363,5 +447,9 @@ class Event
     public $start_time = '';
     public $end_time = '';
     public $status = '';
+    public $price = '';
+    public $type = '';
+    public $type2 = '';
+    public $image = '';
     public $feed = '';
 }
