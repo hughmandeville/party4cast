@@ -6,20 +6,27 @@
  *   https://www.eventbriteapi.com
  *   https://www.eventbrite.com/d/ny--new-york/parties/?crt=regular&sort=date
  *
- * NightOut New York - calls NighOut search API .
+ * NightOut New York - calls NighOut search API.
  *   https://nightout.com/api/search.json?timing%5B%5D=week&city=2&page=1
+ *   https://nightout.com/ny/new-york
+ *
+ * NYC Go - calls NYC Go events API.
+ *   http://www.nycgo.com/feeds/events/2016-11-13/2016-11-20/1010
+ *   http://www.nycgo.com/things-to-do/events-in-nyc/nightlife-calendar
  *
  * NOTE: Make sure the client email address (fb-video-dashboard@nyt-newsroom-dashboards.iam.gserviceaccount.com)
  * has edit permission on the sheet.  Otherwise will need to update code to impersonate someone.
  *
  * ----
  *
- * https://www.timeout.com/newyork/bars/bar-openings-and-events-in-nyc
- * https://www.timeout.com/newyork/nightlife/best-parties-in-nyc-this-week
- * https://nightout.com/ny/new-york
- * http://www.nycgo.com/things-to-do/events-in-nyc/nightlife-calendar
- * http://www.nyc.com/concert_tickets/
- * http://www.villagevoice.com/calendar
+ * To Add
+ *   http://www.nyc.com/concert_tickets/
+ *   https://www.timeout.com/newyork/bars/bar-openings-and-events-in-nyc
+ *   https://www.timeout.com/newyork/nightlife/best-parties-in-nyc-this-week
+ *   http://www.villagevoice.com/calendar
+ * 
+ * To Do
+ *   Write to Google spreadsheet in chunks.
  */
 ini_set('display_errors', 1);
 date_default_timezone_set('America/New_York');
@@ -53,10 +60,10 @@ curl_setopt($ch,CURLOPT_CONNECTTIMEOUT,10);
 curl_setopt($ch,CURLOPT_RETURNTRANSFER,1);
 
 
+$ng_events = get_nycgo_events($ch);
 $no_events = get_nightout_events($ch);
 $eb_events = get_evenbrite_events($ch, $eventbrite_oauth_token);
-
-$events = array_merge($no_events, $eb_events);
+$events = array_merge($ng_events, $no_events, $eb_events);
 
 // TODO: order events by date
 
@@ -88,6 +95,46 @@ $diff_time = $end_time - $start_time;
 printf("Took %2.1fs to run and used %s of memory.\n", $diff_time, bytes_to_nice_string(memory_get_usage()));
 
 exit(0);
+
+
+/**
+ * get_nycgo_events - gets NYC Go events using their events API.
+ */
+function get_nycgo_events($ch)
+{
+    $events = array();
+    $start_date = date('Y-m-d');
+    $next_week = strtotime('+7 days');
+    $end_date = date('Y-m-d', $next_week);
+    $url = "http://www.nycgo.com/feeds/events/$start_date/$end_date/1010";
+    usleep(400000);
+
+    curl_setopt($ch,CURLOPT_URL, $url);
+    $response_data = curl_exec($ch);
+    if ($response_data != null) {
+        $data = json_decode($response_data, true);
+        $event_dates = $data['items'];
+        foreach($event_dates as $event_date) {
+            $events_data = $event_date['events'];
+            foreach ($events_data as $event_data) {
+                $event = new Event();
+                $event->name = $event_data['title'];
+                $event->description = $event_data['description'];
+                $event->url = 'http://www.nycgo.com/events/' . $event_data['url'];
+                $event->start_time = date("r", ($event_data['startDate']/1000));
+                $event->end_time = date("r", ($event_data['endDate']/1000));
+                $event->status = '';
+                $event->type = $event_data['primaryCategory'];
+                $event->type2 = '';
+                $event->image = $event_data['image'];
+                $event->feed = 'NYC Go';
+                $events[] = $event;
+            }
+        }
+    }
+    return ($events);
+}
+
 
 
 /**
@@ -280,6 +327,9 @@ function get_event_row($event)
  */
 function write_rows_to_sheet($service, $spreadsheet_id, $sheet_id, $rows, $start_row)
 {
+    if (empty($rows)) {
+        return;
+    }
     $num_rows = count($rows);
     $num_cols = count($rows[0]->values);
 
