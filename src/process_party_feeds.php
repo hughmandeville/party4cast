@@ -24,8 +24,9 @@
  *   https://www.timeout.com/newyork/bars/bar-openings-and-events-in-nyc
  *   https://www.timeout.com/newyork/nightlife/best-parties-in-nyc-this-week
  *   http://www.villagevoice.com/calendar
- * 
+ *
  * To Do
+ *   Setup to run every day.
  *   Write to Google spreadsheet in chunks.
  */
 ini_set('display_errors', 1);
