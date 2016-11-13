@@ -14,13 +14,15 @@
  *   http://www.nycgo.com/feeds/events/2016-11-13/2016-11-20/1010
  *   http://www.nycgo.com/things-to-do/events-in-nyc/nightlife-calendar
  *
+ * NYC.com - parse NYC.com pages.
+ *   http://www.nyc.com/concert_ticketselements/?page=2
+ *
  * NOTE: Make sure the client email address (fb-video-dashboard@nyt-newsroom-dashboards.iam.gserviceaccount.com)
  * has edit permission on the sheet.  Otherwise will need to update code to impersonate someone.
  *
  * ----
  *
  * To Add
- *   http://www.nyc.com/concert_tickets/
  *   https://www.timeout.com/newyork/bars/bar-openings-and-events-in-nyc
  *   https://www.timeout.com/newyork/nightlife/best-parties-in-nyc-this-week
  *   http://www.villagevoice.com/calendar
@@ -56,15 +58,18 @@ print "===================\n";
 print "Spreadsheet: https://docs.google.com/spreadsheets/d/$spreadsheet_id/\n";
 
 $ch=curl_init();
-curl_setopt($ch,CURLOPT_HTTPGET, TRUE);
-curl_setopt($ch,CURLOPT_CONNECTTIMEOUT,10);
-curl_setopt($ch,CURLOPT_RETURNTRANSFER,1);
-
+curl_setopt($ch, CURLOPT_HTTPGET, TRUE);
+curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36');
 
 $ng_events = get_nycgo_events($ch);
+$nc_events = get_nyccom_events($ch);
 $no_events = get_nightout_events($ch);
 $eb_events = get_evenbrite_events($ch, $eventbrite_oauth_token);
-$events = array_merge($ng_events, $no_events, $eb_events);
+$events = array_merge($ng_events, $nc_events, $no_events, $eb_events);
+
 
 // TODO: order events by date
 
@@ -98,6 +103,62 @@ printf("Took %2.1fs to run and used %s of memory.\n", $diff_time, bytes_to_nice_
 exit(0);
 
 
+
+/**
+ * get_nyccom_events - gets NYC.com.
+ */
+function get_nyccom_events($ch)
+{
+    $events = array();
+    for ($i=2; $i<=12; $i++) {
+        usleep(400000);
+        $url = 'http://www.nyc.com/concert_ticketselements/?page=' . $i;
+
+        curl_setopt($ch, CURLOPT_URL, $url);
+        $response_data = curl_exec($ch);
+        if ($response_data != null) {
+            $doc = new DOMDocument();
+            libxml_use_internal_errors(true);
+            $doc->loadHTML($response_data);
+            $xpath = new DOMXPath($doc);
+
+            $items = $xpath->query('//li[not(contains(@class, "header"))]');
+
+            foreach ($items as $item) {
+                $event = new Event();
+                $names = $xpath->query('.//h3[@itemprop="name"]', $item);
+                if ((!empty($names)) && (!empty($names[0]))) {
+                    $event->name = $names[0]->nodeValue;
+                } else {
+                    continue;
+                }
+
+                $date_venues = $xpath->query('.//div[@class="datevenue"]', $item);
+                foreach($date_venues as $date_venue) {
+                    $start_dates = $xpath->query('.//meta[@itemprop="startDate"]', $date_venue);
+                    $start_time = date('r', strtotime($start_dates[0]->getAttribute('content')));
+                    $event->start_time = $start_time;
+                }
+
+                $venues = $xpath->query('.//span[@itemprop="name"]', $item);
+                $event->description = $venues[0]->nodeValue;
+
+                $urls = $xpath->query('.//a[@itemprop="url"]', $item);
+                $event->url = $urls[0]->getAttribute('href');
+                $event->end_time = '';
+                $event->status = '';
+                $event->type = '';
+                $event->type2 = '';
+                $event->image = '';
+                $event->feed = 'NYC.com';
+                $events[] = $event;
+            }
+        }
+    }
+    return ($events);
+}
+
+
 /**
  * get_nycgo_events - gets NYC Go events using their events API.
  */
@@ -110,7 +171,7 @@ function get_nycgo_events($ch)
     $url = "http://www.nycgo.com/feeds/events/$start_date/$end_date/1010";
     usleep(400000);
 
-    curl_setopt($ch,CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_URL, $url);
     $response_data = curl_exec($ch);
     if ($response_data != null) {
         $data = json_decode($response_data, true);
@@ -153,7 +214,7 @@ function get_nightout_events($ch)
     do {
         usleep(400000);
 
-        curl_setopt($ch,CURLOPT_URL, $nightout_url . '&page=' . $page_number);
+        curl_setopt($ch, CURLOPT_URL, $nightout_url . '&page=' . $page_number);
         $response_data = curl_exec($ch);
 
         if ($response_data != null) {
@@ -209,7 +270,7 @@ function get_evenbrite_events($ch, $eventbrite_oauth_token)
     do {
         usleep(400000);
 
-        curl_setopt($ch,CURLOPT_URL, $eventbrite_url . '&page=' . $page_number);
+        curl_setopt($ch, CURLOPT_URL, $eventbrite_url . '&page=' . $page_number);
         $response_data = curl_exec($ch);
 
         if ($response_data != null) {
