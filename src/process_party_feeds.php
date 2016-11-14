@@ -80,20 +80,37 @@ $service = get_service();
 print "Clearing sheet...\n\n";
 clear_spreadsheet($service, $spreadsheet_id, $sheet_id);
 
-$rows = array();
-$rows[] = get_first_row();
 
+$rows = get_header_rows();
 $row_num = 0;
-// Write first two rows.
+// Write header rows.
 write_rows_to_sheet($service, $spreadsheet_id, $sheet_id, $rows, $row_num);
-$row_num++;
+$row_num = count($rows);
 
+
+printf("Writing event rows to sheet...\n\n");
+$chunk_size = 50;
+$free_row = 2;
 $rows = array();
+$cur_event = 0;
 foreach($events as $event) {
     $rows[] = get_event_row($event);
-    print  '  ' . $event->name . "\n";
+    //print  '  ' . $event->name . "\n";
+    if ((($cur_event % $chunk_size) == 0) && ($cur_event != 0)) {
+        usleep(300000);
+        write_rows_to_sheet($service, $spreadsheet_id, $sheet_id, $rows, $free_row);
+        printf("  Wrote event rows %4d - %4d.\n", ($free_row + 1), ($free_row + count($rows)));
+        $free_row += count($rows);
+        $rows = array();
+    }
+    $cur_event++;
+    //break;
 }
-write_rows_to_sheet($service, $spreadsheet_id, $sheet_id, $rows, $row_num);
+if (count($rows) > 0) {
+    write_rows_to_sheet($service, $spreadsheet_id, $sheet_id, $rows, $free_row);
+    printf("  Wrote event rows %4d - %4d.\n", ($free_row + 1), ($free_row + count($rows)));
+}
+print ("\nWrote " . count($events) . " event rows.\n\n");
 
 
 $end_time = microtime(true);
@@ -337,13 +354,30 @@ function clear_spreadsheet($service, $spreadsheet_id, $sheet_id)
 }
 
 /**
- * Get first row.
+ * Get header rows.
  */
-function get_first_row()
+function get_header_rows()
 {
     global $color;
+    $rows = array();
     $row = new Google_Service_Sheets_RowData();
-    // get column headers
+    $cells = array();
+    $update_str = 'This script is programmatically updated at 11am every morning.  Last updated ' . date('r') . '.';
+    $cells[] = get_cell($update_str,  $color['s1'], false, 12, 'LEFT',   'BOTTOM', 'WRAP');  // A - 1
+    $cells[] = get_cell('',  $color['s1'], false, 12, 'LEFT',   'BOTTOM', 'WRAP');  // B - 2
+    $cells[] = get_cell('',  $color['s1'], false, 12, 'LEFT',   'BOTTOM', 'WRAP');  // C - 3
+    $cells[] = get_cell('',  $color['s1'], false, 12, 'LEFT',   'BOTTOM', 'WRAP');  // D - 4
+    $cells[] = get_cell('',  $color['s1'], false, 12, 'LEFT',   'BOTTOM', 'WRAP');  // E - 5
+    $cells[] = get_cell('',  $color['s1'], false, 12, 'LEFT',   'BOTTOM', 'WRAP');  // F - 6
+    $cells[] = get_cell('',  $color['s1'], false, 12, 'LEFT',   'BOTTOM', 'WRAP');  // G - 7
+    $cells[] = get_cell('',  $color['s1'], false, 12, 'LEFT',   'BOTTOM', 'WRAP');  // H - 8
+    $cells[] = get_cell('',  $color['s1'], false, 12, 'LEFT',   'BOTTOM', 'WRAP');  // I - 9
+    $cells[] = get_cell('',  $color['s1'], false, 12, 'LEFT',   'BOTTOM', 'WRAP');  // J - 10
+    $cells[] = get_cell('',  $color['s1'], false, 12, 'LEFT',   'BOTTOM', 'WRAP');  // K - 11
+    $row->setValues($cells);
+    $rows[] = $row;
+    
+    $row = new Google_Service_Sheets_RowData();
     $cells = array();
     $cells[] = get_cell('Event Name',  $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // A - 1
     $cells[] = get_cell('Description', $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // B - 2
@@ -357,7 +391,10 @@ function get_first_row()
     $cells[] = get_cell('Image',       $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // J - 10
     $cells[] = get_cell('Feed',        $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // K - 11
     $row->setValues($cells);
-    return ($row);
+    $rows[] = $row;
+
+    
+    return ($rows);
 }
 
 
