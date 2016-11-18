@@ -70,8 +70,21 @@ $no_events = get_nightout_events($ch);
 $eb_events = get_evenbrite_events($ch, $eventbrite_oauth_token);
 $events = array_merge($ng_events, $nc_events, $no_events, $eb_events);
 
-
 // TODO: order events by date
+
+// Write to a JSON file
+$file_data = array('created' => date('r'),
+                   'created_ts' => time(),
+                   'num_events' => count($events),
+                   'host' => gethostname(),
+                   'events' => $events);
+                   
+$json = json_encode($file_data);
+$file = '/tmp/party4cast_events.json';
+$ret = file_put_contents($file, $json);
+$file_data = null;
+
+print "\nWrote data to file $file.\n\n";
 
 // Get the Google Sheets Service.
 $service = get_service();
