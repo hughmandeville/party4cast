@@ -1,0 +1,53 @@
+html, body {
+  background: #000000;
+  color: #ffffff;
+  font-family: 'Kanit', monospace;
+  font-weight: 900;
+  font-style: italic;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+a:hover {
+  color: red;
+}
+h1 {
+  font-size: 34px;
+  text-transform: uppercase;
+  margin: 10px;
+  color: red;
+  line-height: 1em;
+}
+h2 {
+  font-size: 24px;
+  line-height: 1em;
+  text-transform: uppercase;
+}
+.video {
+  width: 100%;
+  height: 100%;
+  min-width: 280px;
+  min-height: 280px;
+}
+
+.boxes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  align-content: flex-start;
+}
+.box {
+  vertical-align: top;  
+  font-size: 18px;
+  line-height: 1.5em;
+  text-transform: uppercase;
+  padding: 10px;
+  flex-grow: 1;
+  flex: auto;
+  margin: 0 auto;
+}
+iframe {
+  border: 0;
+}
