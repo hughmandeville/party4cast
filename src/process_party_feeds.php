@@ -1,6 +1,8 @@
 <?php
 /**
- * process_party_feeds.php
+ * process_party_feeds.php - creates a Google spreadsheet of events in NYC.
+ *
+ *   https://docs.google.com/spreadsheets/d/1sj7QTBQNC71RpTvUT-3dmBwLZoFiigZn_cJeQgXnUgc/
  *
  * Eventbrite NYC parties - calls Eventbrite search API.
  *   https://www.eventbriteapi.com
@@ -80,7 +82,8 @@ $file_data = array('created' => date('r'),
                    'events' => $events);
                    
 $json = json_encode($file_data);
-$file = '/tmp/party4cast_events.json';
+// $file = '/tmp/party4cast_events.json';
+$file = '/home/muchob5/public_html/party4cast/admin/party4cast_events.json';
 $ret = file_put_contents($file, $json);
 $file_data = null;
 
