@@ -31,7 +31,7 @@
  *   http://www.villagevoice.com/calendar
  *
  * To Do
- *   Setup to run every day.
+ *   Handle image /defaults/posters/medium.png from NightOut NYC
  *   Write to Google spreadsheet in chunks.
  */
 ini_set('display_errors', 1);
