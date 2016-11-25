@@ -1,8 +1,9 @@
 <?php
 /**
- * process_party_feeds.php - creates a Google spreadsheet of events in NYC.
+ * process_party_feeds.php - creates a Google spreadsheet of events in NYC and a JSON file
  *
  *   https://docs.google.com/spreadsheets/d/1sj7QTBQNC71RpTvUT-3dmBwLZoFiigZn_cJeQgXnUgc/
+ *   http://muchobliged.tv/party4cast/admin/party4cast_events.json
  *
  * Eventbrite NYC parties - calls Eventbrite search API.
  *   https://www.eventbriteapi.com
