@@ -70,10 +70,10 @@ a:hover {
 }
 
 
-#results {
-  padding-top: 20px;
+#filter {
+  padding: 20px 0;
 }
-#table_results {
+#table_results, #filter {
    margin: 0 auto;
    width: 90%;
 }
