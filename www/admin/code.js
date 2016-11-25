@@ -1,5 +1,9 @@
 var events = null;
 
+var filter_day = "all";
+var filter_type = "all";
+var filter_feed = "all";
+
 $(function() {
     $.ajax({
         url: "http://muchobliged.tv/party4cast/admin/party4cast_events.json",
@@ -11,14 +15,27 @@ $(function() {
         events = data["events"];
         update_results();
     });
+
+    $("#filter_feed").on("change", function() {
+        filter_feed = $("#filter_feed").val();
+        update_results();
+    });
 });
 
 function update_results()
 {
     var html = '<table id="table_results">';
-    html += '<tr><th>Image</th><th>Event</th><th>Start Time</th><th>End Time</th><th>Price</th><th>Type</th><th>Feed</th></tr>';
+    html += '<tr><th>Image</th><th>Event</th><th>Start Time</th><th>End Time</th><th>Type</th><th>Feed</th><th>Price</th></tr>';
+    var total = events.length;
+    var shown = 0;
     for (i in events) {
         var event = events[i];
+        if (filter_feed != "all") {
+            if (event['feed'] != filter_feed) {
+                continue;
+            }
+        }
+
         var event_img = '';
         if ((event['image'] != null) && (event['image'] != "")) {
             event_img = '<a href="' + event['url'] + '"><img class="img_event" src="' + event['image'] + '"/></a>';
@@ -34,13 +51,15 @@ function update_results()
             '<td>' + event_name  + '</td>' +
             '<td>' + event['start_time'] + '</td>' +
             '<td>' + event['end_time'] + '</td>' +
-            '<td>' + event['price'] + '</td>' +
             '<td>' + event_type + '</td>' +
             '<td>' + event['feed'] + '</td>' +
+            '<td>' + event['price'] + '</td>' +
             '</tr>';
+        shown++;
     }
 
     html += '</table>';
     $("#results").html(html);
+    $("#num_events").html(shown + "/" + total);
 }
 
