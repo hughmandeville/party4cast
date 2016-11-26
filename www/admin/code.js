@@ -1,10 +1,11 @@
 var events = null;
 
+var filter_text = "";
 var filter_day = "all";
 var filter_type = "all";
 var filter_feed = "all";
 
-var sort_by = "name";
+var sort_by = "start_ts";
 var sort_order = 1;
 
 $(function() {
@@ -19,14 +20,27 @@ $(function() {
         update_results();
     });
 
+
+    $("#filter_day").on("change", function() {
+        filter_day = $("#filter_day").val();
+        update_results();
+    });
     $("#filter_feed").on("change", function() {
         filter_feed = $("#filter_feed").val();
+        update_results();
+    });
+    $("#filter_text").on("change", function() {
+        filter_text = $("#filter_text").val();
         update_results();
     });
     $("#filter_type").on("change", function() {
         filter_type = $("#filter_type").val();
         update_results();
     });
+    $("#button_search").on("click", function() {
+        update_results();
+    });
+
     $("#nav_menu").on("click", function() {
         $("#menu_panel").css('left', $(this).position().left - 212);
         $("#menu_panel").toggle();
@@ -47,23 +61,28 @@ function update_results()
     
     var html = '<table id="table_results">';
     var event_sort_str = "";
-    var type_sort_str = "";
     var feed_sort_str = "";
+    var start_sort_str = "";
+    var type_sort_str = "";
+    
     var arrow_str = '<i class="material-icons">arrow_drop_down</i>';
     if (sort_order == -1) {
         arrow_str = '<i class="material-icons">arrow_drop_up</i>';
     }
-    if (sort_by == "name") {
+    if (sort_by == "feed") {
+        feed_sort_str = arrow_str;
+    } else if (sort_by == "name") {
         event_sort_str = arrow_str;
+    } else if (sort_by == "start_ts") {
+        start_sort_str = arrow_str;
     } else if (sort_by == "type") {
         type_sort_str = arrow_str;
-    } else if (sort_by == "feed") {
-        feed_sort_str = arrow_str;
     }
     
     html += '<tr><th>Image</th>' +
         '<th data-sort-by="name">Event' + event_sort_str + '</th>' +
-        '<th>Start Time</th>' +
+        '<th data-sort-by="start_ts">Start Day</th>' +
+        '<th data-sort-by="start_ts">Start Time' + start_sort_str + '</th>' +
         '<th>End Time</th>' +
         '<th data-sort-by="type">Type' + type_sort_str + '</th>' +
         '<th data-sort-by="feed">Feed' + feed_sort_str + '</th>' +
@@ -72,8 +91,18 @@ function update_results()
     var shown = 0;
     for (i in events) {
         var event = events[i];
+        if (filter_day != "all") {
+            if (event['start_day'] != filter_day) {
+                continue;
+            }
+        }
         if (filter_feed != "all") {
             if (event['feed'] != filter_feed) {
+                continue;
+            }
+        }
+        if (filter_text != "") {
+            if (event['name'].toLowerCase().indexOf(filter_text.toLowerCase()) < 0) {
                 continue;
             }
         }
@@ -101,6 +130,7 @@ function update_results()
         html += '<tr>' +
             '<td>' + event_img + '</td>' +
             '<td>' + event_name  + '</td>' +
+            '<td>' + event['start_day'] + '</td>' +
             '<td>' + event['start_time'] + '</td>' +
             '<td>' + event['end_time'] + '</td>' +
             '<td>' + event_type + '</td>' +
@@ -146,24 +176,23 @@ function get_feed_link(feed)
 }
 
 
-
+/**
+ * Compare two events for sorting.
+ */
 function compare_events(e1, e2)
 {
-    if (e1[sort_by].trim() < e2[sort_by].trim()) {
+    if (e1[sort_by] < e2[sort_by]) {
         return (-1 * sort_order);
     }
-    if (e1[sort_by].trim() > e2[sort_by].trim()) {
+    if (e1[sort_by] > e2[sort_by]) {
         return (1 * sort_order);
     }
-
-
-    if (e1['name'].trim() < e2['name'].trim()) {
+    
+    if (e1['name'] < e2['name']) {
         return (-1);
     }
-    if (e1['name'].trim() > e2['name'].trim()) {
+    if (e1['name'] > e2['name']) {
         return (1);
-    }
-
-    
+    }    
     return (0);
 }
