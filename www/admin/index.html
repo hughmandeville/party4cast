@@ -20,15 +20,16 @@
 
     <div id="filter">
       <b>Events</b> (<span id="num_events"></span>) :
+      <input type="search" placeholder="search text" value="" id="filter_text"/>
       <select name="filter_day" id="filter_day">
         <option value="all">All Days</option>
-        <option value="sun">Sunday</option>
-        <option value="mon">Monday</option>
-        <option value="tue">Tuesday</option>
-        <option value="wed">Wednesday</option>
-        <option value="thu">Thursday</option>
-        <option value="fri">Friday</option>
-        <option value="sat">Saturday</option>
+        <option value="Sunday">Sunday</option>
+        <option value="Monday">Monday</option>
+        <option value="Tuesday">Tuesday</option>
+        <option value="Wednesday">Wednesday</option>
+        <option value="Thursday">Thursday</option>
+        <option value="Friday">Friday</option>
+        <option value="Saturday">Saturday</option>
       </select>
       <select name="filter_type" id="filter_type">
         <option value="all">All Types</option>
@@ -38,12 +39,13 @@
         <option value="Performing Arts">Performing Arts</option>
       </select>
       <select name="filter_feed" id="filter_feed">
-        <option value="all">All Feed</option>
+        <option value="all">All Feeds</option>
         <option value="Eventbrite Parties NYC">Eventbrite Parties NYC</option>
         <option value="NightOut NYC">NightOut NYC</option>
         <option value="NYC.com">NYC.com</option>
         <option value="NYC Go">NYC Go</option>
       </select>
+      <input type="button" value="Search" id="button_search"/>
     </div>
     <div id="results"></div>      
     
