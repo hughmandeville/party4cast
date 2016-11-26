@@ -31,7 +31,6 @@
  *   http://www.villagevoice.com/calendar
  *
  * To Do
- *   Handle image /defaults/posters/medium.png from NightOut NYC
  *   Write to Google spreadsheet in chunks.
  */
 ini_set('display_errors', 1);
@@ -52,6 +51,8 @@ $color = array();
 $color['s1']   = 'FFECB3'; // Amber 100
 $color['s2']   = 'FFF8E1'; // Amber 50
 
+$date_format = 'D M j g:ia';
+
 // Set Google Sheet ID
 $spreadsheet_id = '1sj7QTBQNC71RpTvUT-3dmBwLZoFiigZn_cJeQgXnUgc';
 $sheet_id = 0;
@@ -67,11 +68,13 @@ curl_setopt($ch, CURLOPT_TIMEOUT, 10);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36');
 
-$ng_events = get_nycgo_events($ch);
-$nc_events = get_nyccom_events($ch);
+//$ng_events = get_nycgo_events($ch);
+//$nc_events = get_nyccom_events($ch);
 $no_events = get_nightout_events($ch);
-$eb_events = get_evenbrite_events($ch, $eventbrite_oauth_token);
-$events = array_merge($ng_events, $nc_events, $no_events, $eb_events);
+//$eb_events = get_evenbrite_events($ch, $eventbrite_oauth_token);
+//$events = array_merge($ng_events, $nc_events, $no_events, $eb_events);
+
+$events = $no_events;
 
 // TODO: order events by date
 
@@ -81,10 +84,15 @@ $file_data = array('created' => date('r'),
                    'num_events' => count($events),
                    'host' => gethostname(),
                    'events' => $events);
-                   
+
 $json = json_encode($file_data);
-// $file = '/tmp/party4cast_events.json';
-$file = '/home/muchob5/public_html/party4cast/admin/party4cast_events.json';
+
+$hostname = gethostname();
+if ($hostname == "toots-2.local") {
+   $file = '/tmp/party4cast_events.json';
+} else {
+   $file = '/home/muchob5/public_html/party4cast/admin/party4cast_events.json';
+}
 $ret = file_put_contents($file, $json);
 $file_data = null;
 
@@ -143,6 +151,7 @@ exit(0);
  */
 function get_nyccom_events($ch)
 {
+    global $date_format;
     $events = array();
     for ($i=2; $i<=12; $i++) {
         usleep(400000);
@@ -170,8 +179,9 @@ function get_nyccom_events($ch)
                 $date_venues = $xpath->query('.//div[@class="datevenue"]', $item);
                 foreach($date_venues as $date_venue) {
                     $start_dates = $xpath->query('.//meta[@itemprop="startDate"]', $date_venue);
-                    $start_time = date('r', strtotime($start_dates[0]->getAttribute('content')));
-                    $event->start_time = $start_time;
+                    $event->start_time = date($date_format, strtotime($start_dates[0]->getAttribute('content')));
+                    $event->start_day = date('l', strtotime($start_dates[0]->getAttribute('content')));
+                    $event->start_ts = strtotime($start_dates[0]->getAttribute('content'));
                 }
 
                 $venues = $xpath->query('.//span[@itemprop="name"]', $item);
@@ -198,6 +208,7 @@ function get_nyccom_events($ch)
  */
 function get_nycgo_events($ch)
 {
+    global $date_format;
     $events = array();
     $start_date = date('Y-m-d');
     $next_week = strtotime('+7 days');
@@ -217,8 +228,11 @@ function get_nycgo_events($ch)
                 $event->name = $event_data['title'];
                 $event->description = $event_data['description'];
                 $event->url = 'http://www.nycgo.com/events/' . $event_data['url'];
-                $event->start_time = date("r", ($event_data['startDate']/1000));
-                $event->end_time = date("r", ($event_data['endDate']/1000));
+                $event->start_ts = $event_data['startDate']/1000;
+                $event->start_day = date('l', ($event_data['startDate']/1000));
+                $event->start_time = date($date_format, ($event_data['startDate']/1000));
+                $event->end_time = date($date_format, ($event_data['endDate']/1000));
+                $event->end_ts = $event_data['endDate']/1000;
                 $event->status = '';
                 $event->type = $event_data['primaryCategory'];
                 $event->type2 = '';
@@ -238,8 +252,8 @@ function get_nycgo_events($ch)
  */
 function get_nightout_events($ch)
 {
+    global $date_format;
     $events = array();
-
     $page_number = 1;
     $page_count = 0;
 
@@ -261,8 +275,11 @@ function get_nightout_events($ch)
                 $event->name = $event_data['title'];
                 $event->description = $event_data['subtitle'];
                 $event->url = "https://nightout.com" . $event_data['url'];
-                $event->start_time = date("h:i a", $event_data['start_time']);
-                $event->end_time = date("h:i a", $event_data['end_time']);
+                $event->start_time = date($date_format, $event_data['timestamp']);
+                $event->start_day = date('l', $event_data['timestamp']);
+                $event->start_ts = $event_data['timestamp'];
+                //$event->end_time = date("h:i a", $event_data['end_time']);
+
                 $event->status = '';
                 if ($event_data['cent_max_price'] > 0) {
                     $event->price = '$' . ($event_data['cent_min_price'] / 100) . ' - $' . ($event_data['cent_max_price'] / 100);
@@ -271,7 +288,9 @@ function get_nightout_events($ch)
                 }
                 $event->type = $event_data['type_label'];
                 $event->type2 = $event_data['item_type'];
-                $event->image = $event_data['image_src'];
+                if ($event_data['image_src'] != '/defaults/posters/medium.png') {
+                    $event->image = $event_data['image_src'];
+                }
                 $event->feed = 'NightOut NYC';
                 $events[] = $event;
             }
@@ -391,26 +410,27 @@ function get_header_rows()
     $cells[] = get_cell('',  $color['s1'], false, 12, 'LEFT',   'BOTTOM', 'WRAP');  // I - 9
     $cells[] = get_cell('',  $color['s1'], false, 12, 'LEFT',   'BOTTOM', 'WRAP');  // J - 10
     $cells[] = get_cell('',  $color['s1'], false, 12, 'LEFT',   'BOTTOM', 'WRAP');  // K - 11
+    $cells[] = get_cell('',  $color['s1'], false, 12, 'LEFT',   'BOTTOM', 'WRAP');  // L - 12
     $row->setValues($cells);
     $rows[] = $row;
-    
+
     $row = new Google_Service_Sheets_RowData();
     $cells = array();
     $cells[] = get_cell('Event Name',  $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // A - 1
     $cells[] = get_cell('Description', $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // B - 2
     $cells[] = get_cell('URL',         $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // C - 3
-    $cells[] = get_cell('Start Time',  $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // D - 4
-    $cells[] = get_cell('End Time',    $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // E - 5
-    $cells[] = get_cell('Status',      $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // F - 6
-    $cells[] = get_cell('Price',       $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // G - 7
-    $cells[] = get_cell('Type',        $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // H - 8
-    $cells[] = get_cell('Type2',       $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // I - 9
-    $cells[] = get_cell('Image',       $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // J - 10
-    $cells[] = get_cell('Feed',        $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // K - 11
+    $cells[] = get_cell('Start Day',   $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // D - 4
+    $cells[] = get_cell('Start Time',  $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // E - 5
+    $cells[] = get_cell('End Time',    $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // F - 6
+    $cells[] = get_cell('Status',      $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // G - 7
+    $cells[] = get_cell('Price',       $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // H - 8
+    $cells[] = get_cell('Type',        $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // I - 9
+    $cells[] = get_cell('Type2',       $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // J - 10
+    $cells[] = get_cell('Image',       $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // K - 11
+    $cells[] = get_cell('Feed',        $color['s1'], true, 12, 'LEFT',   'BOTTOM', 'WRAP');  // L - 12
     $row->setValues($cells);
     $rows[] = $row;
 
-    
     return ($rows);
 }
 
@@ -423,14 +443,15 @@ function get_event_row($event)
     $cells[] = get_cell($event->name,         $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // A - 1
     $cells[] = get_cell($event->description,  $color['s2'], false,  8, 'LEFT', 'TOP', 'WRAP', 'string');  // B - 2
     $cells[] = get_cell($event->url,          $color['s2'], false,  9, 'LEFT', 'TOP', 'WRAP', 'string');  // C - 3
-    $cells[] = get_cell($event->start_time,   $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // D - 4
-    $cells[] = get_cell($event->end_time,     $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // E - 5
-    $cells[] = get_cell($event->status,       $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // F - 6
-    $cells[] = get_cell($event->price,        $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // G - 7
-    $cells[] = get_cell($event->type,         $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // H - 8
-    $cells[] = get_cell($event->type2,        $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // I - 9
-    $cells[] = get_cell($event->image,        $color['s2'], false,  9, 'LEFT', 'TOP', 'WRAP', 'string');  // J - 10
-    $cells[] = get_cell($event->feed,         $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // K - 11
+    $cells[] = get_cell($event->start_day,    $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // D - 4
+    $cells[] = get_cell($event->start_time,   $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // E - 5
+    $cells[] = get_cell($event->end_time,     $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // F - 6
+    $cells[] = get_cell($event->status,       $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // G - 7
+    $cells[] = get_cell($event->price,        $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // H - 8
+    $cells[] = get_cell($event->type,         $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // I - 9
+    $cells[] = get_cell($event->type2,        $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // J - 10
+    $cells[] = get_cell($event->image,        $color['s2'], false,  9, 'LEFT', 'TOP', 'WRAP', 'string');  // K - 11
+    $cells[] = get_cell($event->feed,         $color['s2'], false, 10, 'LEFT', 'TOP', 'WRAP', 'string');  // L - 12
 
     $row->setValues($cells);
     return ($row);
@@ -611,7 +632,10 @@ class Event
     public $description = '';
     public $url = '';
     public $start_time = '';
+    public $start_ts = 0;
+    public $start_day = '';
     public $end_time = '';
+    public $end_ts = 0;
     public $status = '';
     public $price = '';
     public $type = '';
