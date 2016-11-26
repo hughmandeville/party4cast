@@ -78,7 +78,9 @@ function get_feed_link(feed)
     } else if (feed == "NightOut NYC") {
         return ('<a href="https://nightout.com/ny/new-york"><img class="logo_feed" src="images/logo_nightout.png"/></a>' +
                '<a href="https://nightout.com/ny/new-york">NightOut NYC</a>');
-
+    } else if (feed == "NYC.com") {
+        return ('<a href="http://www.nyc.com/bars_clubs_music/"><img class="logo_feed" src="images/logo_nyc_com.png"/></a>' +
+               '<a href="http://www.nyc.com/bars_clubs_music/">NYC.com</a>');
     }
     return (feed);
 }
