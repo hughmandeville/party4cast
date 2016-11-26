@@ -4,10 +4,13 @@ var filter_day = "all";
 var filter_type = "all";
 var filter_feed = "all";
 
+var sort_by = "name";
+var sort_order = 1;
+
 $(function() {
     $.ajax({
-        //url: "http://muchobliged.tv/party4cast/admin/party4cast_events.json",
-        url: "http://localhost/party4cast_events.json",
+        url: "http://muchobliged.tv/party4cast/admin/party4cast_events.json",
+        //url: "http://localhost/party4cast_events.json",
         cache: true
     })
     .done(function(data) {
@@ -24,17 +27,47 @@ $(function() {
         filter_type = $("#filter_type").val();
         update_results();
     });
-
+    $("#nav_menu").on("click", function() {
+        $("#menu_panel").css('left', $(this).position().left - 212);
+        $("#menu_panel").toggle();
+    });
+    $(window).resize(function() {
+        $("#menu_panel").hide();
+    });
 });
 
 function update_results()
 {
     if (events == null) {
-        // XXX: set error message
+        $("#results").html("No events");
         return;
     }
+
+    events.sort(compare_events);
+    
     var html = '<table id="table_results">';
-    html += '<tr><th>Image</th><th>Event</th><th>Start Time</th><th>End Time</th><th>Type</th><th>Feed</th><th>Price</th></tr>';
+    var event_sort_str = "";
+    var type_sort_str = "";
+    var feed_sort_str = "";
+    var arrow_str = '<i class="material-icons">arrow_drop_down</i>';
+    if (sort_order == -1) {
+        arrow_str = '<i class="material-icons">arrow_drop_up</i>';
+    }
+    if (sort_by == "name") {
+        event_sort_str = arrow_str;
+    } else if (sort_by == "type") {
+        type_sort_str = arrow_str;
+    } else if (sort_by == "feed") {
+        feed_sort_str = arrow_str;
+    }
+    
+    html += '<tr><th>Image</th>' +
+        '<th data-sort-by="name">Event' + event_sort_str + '</th>' +
+        '<th>Start Time</th>' +
+        '<th>End Time</th>' +
+        '<th data-sort-by="type">Type' + type_sort_str + '</th>' +
+        '<th data-sort-by="feed">Feed' + feed_sort_str + '</th>' +
+        '<th>Price</th></tr>';
     var total = events.length;
     var shown = 0;
     for (i in events) {
@@ -80,6 +113,17 @@ function update_results()
     html += '</table>';
     $("#results").html(html);
     $("#num_events").html(shown + "/" + total);
+
+    $("th[data-sort-by]").on("click", function() {
+        var new_sort_by = $(this).data("sort-by");
+        if (new_sort_by == sort_by) {
+            sort_order *= -1;
+            update_results();
+        } else {
+            sort_by = new_sort_by;
+            update_results();
+        }
+    });
 }
 
 function get_feed_link(feed)
@@ -101,3 +145,25 @@ function get_feed_link(feed)
     return (feed);
 }
 
+
+
+function compare_events(e1, e2)
+{
+    if (e1[sort_by].trim() < e2[sort_by].trim()) {
+        return (-1 * sort_order);
+    }
+    if (e1[sort_by].trim() > e2[sort_by].trim()) {
+        return (1 * sort_order);
+    }
+
+
+    if (e1['name'].trim() < e2['name'].trim()) {
+        return (-1);
+    }
+    if (e1['name'].trim() > e2['name'].trim()) {
+        return (1);
+    }
+
+    
+    return (0);
+}
