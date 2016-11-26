@@ -169,7 +169,7 @@ function get_nyccom_events($ch)
                 $event = new Event();
                 $names = $xpath->query('.//h3[@itemprop="name"]', $item);
                 if ((!empty($names)) && (!empty($names[0]))) {
-                    $event->name = $names[0]->nodeValue;
+                    $event->name = trim($names[0]->nodeValue);
                 } else {
                     continue;
                 }
@@ -223,7 +223,7 @@ function get_nycgo_events($ch)
             $events_data = $event_date['events'];
             foreach ($events_data as $event_data) {
                 $event = new Event();
-                $event->name = $event_data['title'];
+                $event->name = trim($event_data['title']);
                 $event->description = $event_data['description'];
                 $event->url = 'http://www.nycgo.com/events/' . $event_data['url'];
                 $event->start_ts = $event_data['startDate']/1000;
@@ -270,7 +270,7 @@ function get_nightout_events($ch)
             $events_data = $data['data'];
             foreach($events_data as $event_data) {
                 $event = new Event();
-                $event->name = $event_data['title'];
+                $event->name = trim($event_data['title']);
                 $event->description = $event_data['subtitle'];
                 $event->url = "https://nightout.com" . $event_data['url'];
                 $event->start_time = date($date_format, $event_data['timestamp']);
@@ -334,7 +334,7 @@ function get_evenbrite_events($ch, $eventbrite_oauth_token)
 
             foreach($events_data as $event_data) {
                 $event = new Event();
-                $event->name = $event_data['name']['text'];
+                $event->name = trim($event_data['name']['text']);
                 $event->description = $event_data['description']['text'];
                 $event->url = $event_data['url'];
                 $event->start_ts = strtotime($event_data['start']['local']);
