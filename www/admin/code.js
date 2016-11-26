@@ -131,16 +131,16 @@ function get_feed_link(feed)
     var url = null;
     if (feed == "Eventbrite Parties NYC") {
         return ('<a href="https://www.eventbrite.com/d/ny--new-york/parties/?crt=regular&sort=best"><img class="logo_feed" src="images/logo_eventbrite.png"/></a>' +
-               '<a href="https://www.eventbrite.com/d/ny--new-york/parties/?crt=regular&sort=best">Eventbrite Parties NYC</a>');
+               '<br/><a href="https://www.eventbrite.com/d/ny--new-york/parties/?crt=regular&sort=best">Eventbrite Parties NYC</a>');
     } else if (feed == "NightOut NYC") {
         return ('<a href="https://nightout.com/ny/new-york"><img class="logo_feed" src="images/logo_nightout.png"/></a>' +
-               '<a href="https://nightout.com/ny/new-york">NightOut NYC</a>');
+               '<br/><a href="https://nightout.com/ny/new-york">NightOut NYC</a>');
     } else if (feed == "NYC.com") {
         return ('<a href="http://www.nyc.com/bars_clubs_music/"><img class="logo_feed" src="images/logo_nyc_com.png"/></a>' +
-               '<a href="http://www.nyc.com/bars_clubs_music/">NYC.com</a>');
+               '<br/><a href="http://www.nyc.com/bars_clubs_music/">NYC.com</a>');
     } else if (feed = "NYC Go") {
         return ('<a href="http://www.nycgo.com/things-to-do/nightlife"><img class="logo_feed" src="images/logo_nyc_go.png"/></a>' +
-               '<a href="http://www.nycgo.com/things-to-do/nightlife">NYC Go</a>');
+               '<br/><a href="http://www.nycgo.com/things-to-do/nightlife">NYC Go</a>');
     }
     return (feed);
 }
