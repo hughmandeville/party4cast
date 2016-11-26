@@ -104,3 +104,13 @@ tr:hover td {
    width: 50px;
    display: inline-block;
 }
+.event_feed {
+   font-size: 12px;
+}
+.event_type {
+   font-size: 14px;
+}
+.event_type2 {
+   font-size: 12px;
+   color: #1976D2;
+}
