@@ -68,13 +68,11 @@ curl_setopt($ch, CURLOPT_TIMEOUT, 10);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36');
 
-//$ng_events = get_nycgo_events($ch);
-//$nc_events = get_nyccom_events($ch);
+$ng_events = get_nycgo_events($ch);
+$nc_events = get_nyccom_events($ch);
 $no_events = get_nightout_events($ch);
-//$eb_events = get_evenbrite_events($ch, $eventbrite_oauth_token);
-//$events = array_merge($ng_events, $nc_events, $no_events, $eb_events);
-
-$events = $no_events;
+$eb_events = get_evenbrite_events($ch, $eventbrite_oauth_token);
+$events = array_merge($ng_events, $nc_events, $no_events, $eb_events);
 
 // TODO: order events by date
 
@@ -305,10 +303,11 @@ function get_nightout_events($ch)
 
 
 /**
- * get_eventrite_events - gets NYC parties from Eventbrite API.
+ * get_eventbrite_events - gets NYC parties from Eventbrite API.
  */
 function get_evenbrite_events($ch, $eventbrite_oauth_token)
 {
+    global $date_format;
     $events = array();
 
     // Eventbrite parties around New York
@@ -338,8 +337,11 @@ function get_evenbrite_events($ch, $eventbrite_oauth_token)
                 $event->name = $event_data['name']['text'];
                 $event->description = $event_data['description']['text'];
                 $event->url = $event_data['url'];
-                $event->start_time = $event_data['start']['local'];
-                $event->end_time = $event_data['end']['local'];
+                $event->start_ts = strtotime($event_data['start']['local']);
+                $event->start_day = date('l', $event->start_ts);
+                $event->start_time = date($date_format, $event->start_ts);
+                $event->end_ts = strtotime($event_data['end']['local']);
+                $event->end_time = date($date_format, $event->end_ts);
                 $event->status = $event_data['status'];
                 $event->feed = 'Eventbrite Parties NYC';
                 $events[] = $event;
@@ -398,7 +400,7 @@ function get_header_rows()
     $rows = array();
     $row = new Google_Service_Sheets_RowData();
     $cells = array();
-    $update_str = 'This script is programmatically updated at 11am every morning.  Last updated ' . date('r') . '.';
+    $update_str = 'This script is programmatically updated at 11:11am every morning.  Last updated ' . date('r') . '.';
     $cells[] = get_cell($update_str,  $color['s1'], false, 12, 'LEFT',   'BOTTOM', 'WRAP');  // A - 1
     $cells[] = get_cell('',  $color['s1'], false, 12, 'LEFT',   'BOTTOM', 'WRAP');  // B - 2
     $cells[] = get_cell('',  $color['s1'], false, 12, 'LEFT',   'BOTTOM', 'WRAP');  // C - 3
