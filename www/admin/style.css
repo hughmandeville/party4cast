@@ -80,11 +80,17 @@ a:hover {
 table, tr, th, td {
   border-collapse: collapse;
   border: 1px solid #90CAF9;
-  color: #0D47A1;
+  color: #000000;
+  margin: 0;
+  padding: 0;
 }
 td, th {
+  margin: 0;
   padding: 10px;
   text-align: center;
+}
+td:first-child {
+  padding: 0px;
 }
 th {
   background: #BBDEFB;
@@ -97,8 +103,12 @@ tr:hover td {
 }
 
 .img_event {
-   max-width: 100px;
-   max-height: 100px;
+  display: block;
+  max-width: 150px;
+  max-height: 120px;
+  padding: 0;
+  margin: 0;
+  border: 0;
 }
 .logo_feed {
    width: 50px;
@@ -113,4 +123,39 @@ tr:hover td {
 .event_type2 {
    font-size: 12px;
    color: #1976D2;
+}
+#menu_panel {
+  position: absolute;
+  border: 1px solid #EEEEEE;
+  background: #FFFFFF;
+  right: 340px;
+  top: 60px;
+  width: 320px;
+  z-index: 100;
+  box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12);
+  padding: 0;
+  font-family: "nyt-franklin",arial,helvetica,sans-serif;
+  font-size: 18px;
+  font-weight: bold;
+  display: none;
+}
+
+.menu_item {
+  border-bottom: 1px solid #EEEEEE;
+  color: #424242;
+  padding: 20px;
+}
+.menu_item:hover {
+  border-bottom: 1px solid #DDDDDD;
+  color: #000000;
+}
+
+.menu_item img {
+  height: 28px;
+  margin-right: 4px;
+  margin-bottom: -8px;
+}
+th[data-sort-by] {
+  cursor: pointer;
+  color: #0D47A1;
 }
