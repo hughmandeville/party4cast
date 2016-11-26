@@ -79,7 +79,7 @@ a:hover {
 }
 table, tr, th, td {
   border-collapse: collapse;
-  border: 1px solid #90CAF9;
+  border: 1px solid #E8EAF6;
   color: #000000;
   margin: 0;
   padding: 0;
@@ -89,23 +89,32 @@ td, th {
   padding: 10px;
   text-align: center;
 }
+th {
+  vertical-align: middle;
+  line-height: 40px;
+}
 td:first-child {
   padding: 0px;
 }
+
 th {
-  background: #BBDEFB;
+  background: #2196F3;
+  color: #ffffff;
 }
-td {
-  background: #FFFFFF;
+tr:nth-child(even) {
+  background: #E3F2FD;
+}
+tr:nth-child(odd) {
+  background: #F5F5F5;
 }
 tr:hover td {
-  background: #E3F2FD;
+  background: #BBDEFB;
 }
 
 .img_event {
   display: block;
-  max-width: 150px;
-  max-height: 120px;
+  width: 120px;
+  height: 80px;
   padding: 0;
   margin: 0;
   border: 0;
@@ -157,5 +166,6 @@ tr:hover td {
 }
 th[data-sort-by] {
   cursor: pointer;
-  color: #0D47A1;
+  color: #B3E5FC;
+  min-width: 100px;
 }
