@@ -6,8 +6,8 @@ var filter_feed = "all";
 
 $(function() {
     $.ajax({
-        url: "http://muchobliged.tv/party4cast/admin/party4cast_events.json",
-        //url: "http://localhost/party4cast_events.json",
+        //url: "http://muchobliged.tv/party4cast/admin/party4cast_events.json",
+        url: "http://localhost/party4cast_events.json",
         cache: true
     })
     .done(function(data) {
@@ -20,6 +20,11 @@ $(function() {
         filter_feed = $("#filter_feed").val();
         update_results();
     });
+    $("#filter_type").on("change", function() {
+        filter_type = $("#filter_type").val();
+        update_results();
+    });
+
 });
 
 function update_results()
@@ -39,6 +44,11 @@ function update_results()
                 continue;
             }
         }
+        if (filter_type != "all") {
+            if (event['type'] != filter_type) {
+                continue;
+            }
+        }
 
         var event_img = '';
         if ((event['image'] != null) && (event['image'] != "")) {
@@ -52,13 +62,16 @@ function update_results()
 
         var event_feed = get_feed_link(event['feed']);
         var event_type = event['type'];
+        if ((event_type != null) || (event_type != "")) {
+            event_type = '<span class="event_type">'  + event['type'] + '</span><br/><span class="event_type2">' + event['type2'] + '</span>';
+        }
         html += '<tr>' +
             '<td>' + event_img + '</td>' +
             '<td>' + event_name  + '</td>' +
             '<td>' + event['start_time'] + '</td>' +
             '<td>' + event['end_time'] + '</td>' +
             '<td>' + event_type + '</td>' +
-            '<td>' + event_feed + '</td>' +
+            '<td class="event_feed">' + event_feed + '</td>' +
             '<td>' + event['price'] + '</td>' +
             '</tr>';
         shown++;
@@ -81,6 +94,9 @@ function get_feed_link(feed)
     } else if (feed == "NYC.com") {
         return ('<a href="http://www.nyc.com/bars_clubs_music/"><img class="logo_feed" src="images/logo_nyc_com.png"/></a>' +
                '<a href="http://www.nyc.com/bars_clubs_music/">NYC.com</a>');
+    } else if (feed = "NYC Go") {
+        return ('<a href="http://www.nycgo.com/things-to-do/nightlife"><img class="logo_feed" src="images/logo_nyc_go.png"/></a>' +
+               '<a href="http://www.nycgo.com/things-to-do/nightlife">NYC Go</a>');
     }
     return (feed);
 }
